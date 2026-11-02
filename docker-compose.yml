@@ -1,5 +1,8 @@
 services:
   app:
+    environment:
+      HOME: /tmp
+      COMPOSER_HOME: /tmp/composer
     build:
       context: .
       dockerfile: docker/php/Dockerfile
