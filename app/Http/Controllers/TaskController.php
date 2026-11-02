@@ -10,6 +10,8 @@ class TaskController extends Controller
     public function show($id)
     {
         $task = Task::findOrFail($id);
-        return $task;
+        return array_merge($task->toArray(), [
+            'deadline_status' => $task->deadlineStatus(),
+        ]);
     }
 }
