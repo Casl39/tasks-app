@@ -39,4 +39,15 @@ class Task extends Model
 
         return 'on_track';
     }
+
+    public function canTransitionTo(string $new): bool
+    {
+        $allowed = [
+            'todo' => ['in_progress'],
+            'in_progress' => ['todo', 'done'],
+            'done' => ['in_progress'],
+        ];
+
+        return in_array($new, $allowed[$this->status], true);
+    }
 }
