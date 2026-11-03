@@ -1,0 +1,14 @@
+$kind: http-request
+description: ""
+url: "{{base_url}}/api/tasks/1"
+method: GET
+headers:
+  Accept: application/json
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("status 200", () => pm.response.to.have.status(200));
+      pm.test("cache was reset", () => pm.expect(pm.response.json().cached).to.eql(false));
+      pm.test("new status is returned", () => pm.expect(pm.response.json().status).to.eql("in_progress"));
+    language: text/javascript
+order: 5000

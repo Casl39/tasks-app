@@ -1,0 +1,42 @@
+{
+	"id": "6ae9b9fd35ee6f313e8ec701",
+	"name": "task-app",
+	"timestamp": "2026-11-03T10:39:59.538Z",
+	"collection_id": "f6f06E5a7B3a80E77F5bf2d4",
+	"folder_id": 0,
+	"environment_id": "0",
+	"totalPass": 15,
+	"delay": 0,
+	"persist": true,
+	"status": "finished",
+	"startedAt": "2026-11-03T10:39:57.820Z",
+	"totalFail": 0,
+	"results": [],
+	"count": 1,
+	"totalTime": 0,
+	"collection": {
+		"requests": [
+			{
+				"id": "Ad8Dd5576Cac803D7C4FB1A0"
+			},
+			{
+				"id": "42a279b0cccCacC0A2aDc002"
+			},
+			{
+				"id": "cfC6CEecFCB46Ec3408e0745"
+			},
+			{
+				"id": "47EcBDbEB55Ed3A6ADb1bf00"
+			},
+			{
+				"id": "AfcBBBc9bCE3ca5aa365efcd"
+			},
+			{
+				"id": "4Dae29AD4e371fc025A216E0"
+			},
+			{
+				"id": "c2fFCADF8e3fB89CA90022f6"
+			}
+		]
+	}
+}

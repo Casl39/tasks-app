@@ -1,0 +1,17 @@
+$kind: http-request
+url: "{{base_url}}/api/tasks/1/status"
+method: PATCH
+headers:
+  Accept: application/json
+body:
+  type: json
+  content: '{"status": "banana"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("status 422", () => pm.response.to.have.status(422));
+      pm.test("validation error on status", () => {
+          pm.expect(pm.response.json().errors).to.have.property("status");
+      });
+    language: text/javascript
+order: 7000
