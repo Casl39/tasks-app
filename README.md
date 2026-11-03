@@ -1,58 +1,147 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Tasks API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+REST API задач на Laravel 13 с кэшированием в Redis. Сервисы работают в отдельных Docker-контейнерах: PHP-FPM (`app`), nginx, MySQL 8 (`db`), Redis.
 
-## About Laravel
+## Требования
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Docker
+- Docker Compose
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Запуск
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+1. Склонировать репозиторий:
+   ```bash
+   git clone git@github.com:Casl39/tasks-app.git
+   cd tasks-app
+   ```
+2. Создать файл окружения:
+   ```bash
+   cp .env.example .env
+   ```
+3. Поднять контейнеры:
+   ```bash
+   docker compose up -d --build
+   ```
+4. Установить зависимости и подготовить приложение:
+   ```bash
+   docker compose exec app composer install
+   docker compose exec app php artisan key:generate
+   docker compose exec app php artisan migrate
+   ```
+5. Создать тестовые задачи:
+   ```bash
+   docker compose exec app php artisan tinker
+   ```
+   В tinker выполнить:
+   ```php
+   App\Models\Task::create(['title'=>'Todo task','status'=>'todo','deadline'=>now()->addDays(3)]);
+   App\Models\Task::create(['title'=>'Progress task','status'=>'in_progress','deadline'=>now()->addHours(5)]);
+   App\Models\Task::create(['title'=>'Done task','status'=>'done','deadline'=>now()->subDay()]);
+   ```
+   Затем `exit`.
 
-## Learning Laravel
+Приложение доступно по адресу: <http://localhost:8080>
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Если возникают ошибки прав на `storage/` или `bootstrap/cache`:
+```bash
+chmod -R 775 storage bootstrap/cache
+```
+В `docker-compose.yml` для сервиса `app` указано `user: "1000:1000"`. Если ваш id пользователя другой (`id -u`, `id -g`), поменяйте значения.
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## API
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+Все запросы с заголовком `Accept: application/json`.
 
-## Agentic Development
+### GET /api/tasks/{id}
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+Возвращает задачу с вычисленным полем `deadline_status` и признаком `cached`.
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+curl -H "Accept: application/json" http://localhost:8080/api/tasks/1
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Ответ 200:
+```json
+{
+  "id": 1,
+  "title": "Todo task",
+  "description": null,
+  "status": "todo",
+  "deadline": "2026-11-06T09:54:25.000000Z",
+  "created_at": "2026-11-03T09:54:25.000000Z",
+  "updated_at": "2026-11-03T09:54:25.000000Z",
+  "deadline_status": "on_track",
+  "cached": false
+}
+```
 
-## Contributing
+Коды: `200`, `404` (задача не найдена).
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### PATCH /api/tasks/{id}/status
 
-## Code of Conduct
+Меняет статус задачи и сбрасывает её кэш.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+curl -X PATCH -H "Accept: application/json" -H "Content-Type: application/json" \
+  -d '{"status":"in_progress"}' http://localhost:8080/api/tasks/1/status
+```
 
-## Security Vulnerabilities
+Ответ 200: задача в том же формате, что и в GET (с новым статусом, без поля `cached`).
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Коды: `200`, `404` (задача не найдена), `422` (неверное значение статуса или недопустимый переход).
 
-## License
+## Правила
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Переходы статусов
+
+| Из            | Разрешено в            |
+|---------------|------------------------|
+| `todo`        | `in_progress`          |
+| `in_progress` | `todo`, `done`         |
+| `done`        | `in_progress`          |
+
+Все остальные переходы, включая переход в тот же статус, возвращают `422`. Статус `status` хранится как enum в миграции (`todo`, `in_progress`, `done`).
+
+### deadline_status
+
+Вычисляется при каждом формировании ответа (не хранится в БД):
+
+- `overdue`: дедлайн уже в прошлом;
+- `due_soon`: до дедлайна меньше 24 часов;
+- `on_track`: иначе.
+
+Для задач в статусе `done` всегда возвращается `on_track`. Время хранится и отдаётся в UTC.
+
+## Кэш
+
+- хранилище: Redis;
+- ключ: `task:{id}` (Laravel добавляет префикс, ключ лежит в базе Redis №1);
+- TTL: 60 секунд;
+- в ответе GET поле `cached`: `false` при чтении из БД, `true` при чтении из кэша;
+- кэш задачи сбрасывается после успешного PATCH.
+
+Из-за кэша `deadline_status` может быть неактуален до 60 секунд.
+
+Посмотреть ключи и время жизни:
+```bash
+docker compose exec redis redis-cli -n 1 KEYS '*'
+docker compose exec redis redis-cli -n 1 TTL "<имя_ключа>"
+```
+
+## Postman
+
+1. Postman → Import → файл `postman/tasks-app.postman_collection.json`.
+2. Переменная `base_url` равна `http://localhost:8080`.
+3. Перед прогоном должны быть задачи: id 1 (`todo`), id 2 (`in_progress`), id 3 (`done`), кэш пустой:
+   ```bash
+   docker compose exec app php artisan migrate:fresh
+   # затем создать три задачи, как в разделе «Запуск», шаг 5
+   docker compose exec app php artisan cache:clear
+   ```
+4. Запускать запросы по порядку (Run collection): они меняют данные.
+
+## Допущения
+
+- `deadline_status` трактуется как вычисляемое поле; enum в миграции задан для колонки `status`.
+- Пароли в `docker-compose.yml` и `.env.example` учебные.
+- `APP_DEBUG=true` подходит только для локальной работы, в продакшене должен быть `false`.
